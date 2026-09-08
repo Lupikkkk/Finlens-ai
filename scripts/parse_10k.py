@@ -10,10 +10,19 @@ with open(INPUT_PATH, encoding="utf-8") as f:
 
 soup = BeautifulSoup(html, "html.parser")
 
-# Extract all visible text, collapsing extra whitespace
+# Remove all <table> elements before extracting text.
+# Financial tables become unreadable noise once flattened into plain text,
+# and we only want the narrative explanations from management.
+tables_removed = 0
+for table in soup.find_all("table"):
+    table.decompose()
+    tables_removed += 1
+
+print(f"Removed {tables_removed} tables from the HTML")
+
 raw_text = soup.get_text(separator="\n")
 lines = [line.strip() for line in raw_text.split("\n")]
-lines = [line for line in lines if line]  # drop empty lines
+lines = [line for line in lines if line]
 full_text = "\n".join(lines)
 
 print(f"Total characters after cleaning: {len(full_text):,}")
@@ -24,8 +33,6 @@ with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
 
 print(f"Saved cleaned text to {OUTPUT_PATH}")
 
-# Extract the real MD&A section: from the second "ITEM 7." occurrence
-# (the first one is just the Table of Contents) up to "ITEM 7A."
 mda_start = full_text.find("ITEM 7. MANAGEMENT'S DISCUSSION")
 mda_end = full_text.find("ITEM 7A.", mda_start)
 
